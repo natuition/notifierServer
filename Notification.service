@@ -1,0 +1,13 @@
+[Unit]
+Description=stream
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/notifierServer/
+ExecStart=/usr/bin/python3.6 /root/notifierServer/ServeurTcp.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

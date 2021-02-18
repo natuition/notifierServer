@@ -1,0 +1,67 @@
+{
+    "Tokens": {
+        "sms": "change",
+        "telegram": "change",
+        "chat_id": "change"
+    },
+    "Translate": {
+        "Supported Language": [
+            "fr",
+            "en",
+            "nl"
+        ],
+        "Messages": {
+            "Connection_closed": {
+                "fr": "Mission accomplie.",
+                "en": "Mission accomplished.",
+                "nl" : "Missie volbracht."
+            },
+            "Connection_lost": {
+                "fr": "Connexion perdu.",
+                "en": "Connection lost.",
+                "nl" : "Verbinding verbroken."
+            },
+            "Connection_aborted": {
+                "fr": "Connexion avortée.",
+                "en": "Connection aborted.",
+                "nl" : "Verbinding afgebroken."
+            },
+            "Robot_OP": {
+                "fr": "Le robot opérationnel.",
+                "en": "Operational robot.",
+                "nl" : "De operationele robot."
+            },
+            "Robot_HS": {
+                "fr": "Violette s'est éteint.",
+                "en": "Violette is off.",
+                "nl": "Violette is uitgeschakeld."
+            }
+        }
+    },
+    "Ip_Robot": {
+        "172.16.3.1": "SN000",
+        "172.16.4.5": "SN002",
+        "172.16.4.9": "SN003",
+        "172.16.4.13": "SN004",
+        "172.16.4.17": "SN005",
+        "172.16.4.21": "SN006",
+        "172.16.4.25": "SN007"
+    },
+    "Robot_Language": {
+        "SN000": "fr",
+        "SN002": "fr",
+        "SN003": "nl",
+        "SN004": "nl",
+        "SN005": "nl",
+        "SN006": "fr",
+        "SN007": "fr"
+    },
+    "Robot_PhoneNumber": {
+        "SN005": [
+            "0689439253"
+        ],
+        "SN006": [
+            "0615385452"
+        ]
+    }
+}
