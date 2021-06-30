@@ -24,15 +24,17 @@ class Notifier:
             return self.ERROR_API
         return r.text
 
-    def sendTelegramMsg(self, token: str, chat_id: str, message: str, sms_destinataires:list):
+    def sendTelegramMsg(self, token: str, chat_id: str, message: str, sms_destinataires:list, sendingSms=True):
         destinataires = ((((str(sms_destinataires)).replace("'", "")).replace("]", "")).replace("[", "")).replace(" ", "")
-        if sms_destinataires : 
-            if len(sms_destinataires) > 1:
-                suf_msg = f"\n\t - Message envoyé aux : {destinataires}."
+        suf_msg=""
+        if sendingSms:
+            if sms_destinataires : 
+                if len(sms_destinataires) > 1:
+                    suf_msg = f"\n\t - Message envoyé aux : {destinataires}."
+                else:
+                    suf_msg = f"\n\t - Message envoyé au : {destinataires}."
             else:
-                suf_msg = f"\n\t - Message envoyé au : {destinataires}."
-        else:
-            suf_msg = "\n\t - Aucun numéro lié à ce robot, aucun SMS envoyé."
+                suf_msg = "\n\t - Aucun numéro lié à ce robot, aucun SMS envoyé."
 
         request = telegram.utils.request.Request(read_timeout=30)
         bot = telegram.Bot(token, request=request)

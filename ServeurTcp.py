@@ -2,6 +2,8 @@ from socket import socket, AF_INET, SOCK_STREAM, timeout
 from threading import Thread
 import json
 from notifier import Notifier
+import schedule
+import time
 
 DEBUG = False
 
@@ -65,6 +67,7 @@ class Server(Thread):
 
     def run(self):
         print("Server start...")
+        self.notifier.sendTelegramMsg(self.tokens["telegram"],self.tokens["chat_id"],"Serveur de notification lancé !",list(),False)
         self.running = True
         self.socket.listen(5)
         while self.running:
@@ -74,6 +77,9 @@ class Server(Thread):
                 continue
             if DEBUG:
                 print(f"[{address[0]}] connected")
+            
+            msg = f"{self.robots[address[0]]} : " + self.translate["Messages"]["Robot_ON"]["fr"]
+            self.notifier.sendTelegramMsg(self.tokens["telegram"],self.tokens["chat_id"],msg,list(),False)
             client_handling = ClientHandling(client, address, self.client_handling_stopped)
             client_handling.start()
             self.client_pool.append(client_handling)
@@ -121,12 +127,22 @@ class ClientHandling(Thread):
         if self.alive:
             self._stop(ErrorLevels.OK, ErrorMessages.CLOSED)
 
+def say_hello():
+    notifier = Notifier()
+    with open('./config.json') as json_file:
+        config = json.load(json_file)
+        tokens = config["Tokens"]
+        notifier.sendTelegramMsg(tokens["telegram"],tokens["chat_id"],"Bonjour, bonne journée à vous ;)",list(),False)
+    
 
 if __name__ == "__main__":
+    schedule.every().day.at("06:00").do(say_hello)
     try:
         server = Server()
         server.start()
         while True:
+            schedule.run_pending()
+            time.sleep(1)
             continue
 
     except KeyboardInterrupt:
