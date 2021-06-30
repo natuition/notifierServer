@@ -93,7 +93,7 @@ class ClientHandling(Thread):
         self.address = address
         self.exit_callback = exit_callback
         self.alive = True
-        self.client.settimeout(2)
+        self.client.settimeout(10)
 
     def _stop(self, error_level: ErrorLevels, error_msg: ErrorMessages):
         self.alive = False
