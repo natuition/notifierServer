@@ -4,6 +4,7 @@ import json
 from notifier import Notifier
 import schedule
 import time
+import utility
 
 DEBUG = False
 
@@ -80,24 +81,31 @@ class Server(Thread):
             
             msg = f"{self.robots[address[0]]} : " + self.translate["Messages"]["Robot_ON"]["fr"]
             self.notifier.sendTelegramMsg(self.tokens["telegram"],self.tokens["chat_id"],msg,list(),False)
-            client_handling = ClientHandling(client, address, self.client_handling_stopped)
+            client_handling = ClientHandling(client, address, self.client_handling_stopped,self.robots[address[0]])
             client_handling.start()
             self.client_pool.append(client_handling)
 
 
 class ClientHandling(Thread):
 
-    def __init__(self, client, address, exit_callback):
+    def __init__(self, client, address, exit_callback, sn):
         Thread.__init__(self)
         self.client = client
         self.address = address
+        self.sn = sn
         self.exit_callback = exit_callback
         self.alive = True
+        self.path_gps_with_extract = None
+        self.resume_session = None
         self.client.settimeout(10)
 
     def _stop(self, error_level: ErrorLevels, error_msg: ErrorMessages):
         self.alive = False
         self.close_connection()
+        if self.path_gps_with_extract is not None:
+            self.path_gps_with_extract.close()
+        if self.resume_session is not None:
+            self.resume_session.close()
         self.exit_callback(self, error_level, error_msg)
 
     def close_connection(self):
@@ -107,9 +115,47 @@ class ClientHandling(Thread):
             print(f"[{self.address[0]}] disconnected")
 
     def onMessage(self, message):
-        if message == SyntheseRobot.HS:
+        if SyntheseRobot.HS in message:
             self._stop(ErrorLevels.OK, SyntheseRobot.HS)
-            
+        elif ";" in message:
+
+            infos = message.split(";")
+            if infos[1] == SyntheseRobot.OP:
+                if self.resume_session is not None:
+                    self.resume_session.remove_end_line()
+                    self.resume_session.write_and_flush(f"End time : {utility.get_current_time()}")
+
+                if self.path_gps_with_extract is None:
+                    self.path_gps_with_extract = utility.Logger(f"{self.sn}/{infos[0]}/path_gps_with_extract.txt", add_time=False)
+                
+                if len(infos) == 4:
+                    self.path_gps_with_extract.write_and_flush(f"{infos[2]} : {infos[3]}\n")
+                else:
+                    self.path_gps_with_extract.write_and_flush(f"{infos[2]}\n")
+
+            elif infos[0] == "START":
+                utility.create_directories(self.sn)
+                utility.create_directories(f"{self.sn}/{infos[1]}")
+                self.field = utility.Logger(f"{self.sn}/{infos[1]}/field.txt", add_time=False)
+                for coord in eval(infos[4]):
+                    self.field.write_and_flush(f"{coord}\n")
+                self.field.close()
+                self.resume_session = utility.Logger(f"{self.sn}/{infos[1]}/session_resume.txt", add_time=False)
+                self.resume_session.write_and_flush(f"Start time : {infos[1]}\n")
+                self.resume_session.write_and_flush(f"Voltage at start : {infos[2]}\n")
+                self.resume_session.write_and_flush(f"Treated plant : {infos[3]}\n")
+                self.resume_session.write_and_flush("Extraction number : {}\n")
+                self.resume_session.write_and_flush("End time :")
+            elif infos[0] == "STOP":
+                if self.resume_session is not None:
+                    if len(infos) == 3:
+                        self.resume_session.remove_end_line()
+                        self.resume_session.remove_end_line()
+                        self.resume_session.write_and_flush(f"Extraction number : {infos[2]}\n")
+                    else:
+                        self.resume_session.remove_end_line()
+                    self.resume_session.write_and_flush(f"End time : {utility.get_current_time()}")
+                            
     def run(self):
         try:
             response = self.client.recv(1024)
