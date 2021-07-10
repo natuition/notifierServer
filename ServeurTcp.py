@@ -97,6 +97,7 @@ class ClientHandling(Thread):
         self.alive = True
         self.path_gps_with_extract = None
         self.resume_session = None
+        self.current_ext = dict()
         self.client.settimeout(10)
 
     def _stop(self, error_level: ErrorLevels, error_msg: ErrorMessages):
@@ -121,17 +122,28 @@ class ClientHandling(Thread):
 
             infos = message.split(";")
             if infos[1] == SyntheseRobot.OP:
-                if self.resume_session is not None:
-                    self.resume_session.remove_end_line()
-                    self.resume_session.write_and_flush(f"End time : {utility.get_current_time()}")
 
                 if self.path_gps_with_extract is None:
                     self.path_gps_with_extract = utility.Logger(f"{self.sn}/{infos[0]}/path_gps_with_extract.txt", add_time=False)
                 
                 if len(infos) == 4:
                     self.path_gps_with_extract.write_and_flush(f"{infos[2]} : {infos[3]}\n")
+                    for key, value in eval(infos[3]).items():
+                        if key not in self.current_ext:
+                            self.current_ext[key] = value
+                        else:
+                            self.current_ext[key] += value
                 else:
                     self.path_gps_with_extract.write_and_flush(f"{infos[2]}\n")
+
+                if self.resume_session is not None:
+                    if len(infos) == 4:
+                        self.resume_session.remove_end_line()
+                        self.resume_session.remove_end_line()
+                        self.resume_session.write_and_flush(f"Extraction number : {self.current_ext}\n")
+                    else:
+                        self.resume_session.remove_end_line()
+                    self.resume_session.write_and_flush(f"End time : {utility.get_current_time()}")
 
             elif infos[0] == "START":
                 utility.create_directories(self.sn)
