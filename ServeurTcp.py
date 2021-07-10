@@ -5,6 +5,7 @@ from notifier import Notifier
 import schedule
 import time
 import utility
+import datetime
 
 DEBUG = False
 
@@ -61,9 +62,13 @@ class Server(Thread):
             
         self.notifier.sendNotifications(msg, clients, self.tokens, sn, self.translate, language)
 
-    def client_handling_stopped(self, client, error_level, error_msg):
+    def client_handling_stopped(self, client, error_level, error_msg, workTime=None, extraction=None):
         if error_msg in [SyntheseRobot.HS,ErrorMessages.CLOSED,ErrorMessages.LOST]:
             self.sendNotification(client.address[0],error_msg)
+        if workTime is not None:
+            self.notifier.sendTelegramMsg(self.tokens["telegram"],self.tokens["chat_id"],f"{self.robots[client.address[0]]} : Temps de travail : {workTime}",list(),False)
+        if extraction is not None:
+            self.notifier.sendTelegramMsg(self.tokens["telegram"],self.tokens["chat_id"],f"{self.robots[client.address[0]]} : Nombre d'extraction {extraction}",list(),False)
         self.client_pool = [client for client in self.client_pool if client.alive]
 
     def run(self):
@@ -97,6 +102,8 @@ class ClientHandling(Thread):
         self.alive = True
         self.path_gps_with_extract = None
         self.resume_session = None
+        self.start_time = None
+        self.end_time = None
         self.current_ext = dict()
         self.client.settimeout(10)
 
@@ -107,7 +114,15 @@ class ClientHandling(Thread):
             self.path_gps_with_extract.close()
         if self.resume_session is not None:
             self.resume_session.close()
-        self.exit_callback(self, error_level, error_msg)
+        extraction = None
+        workTime = None
+        if self.start_time is not None:
+            dateD = datetime.datetime.strptime(self.start_time, "%d-%m-%Y %H-%M-%S %f")
+            dateF = datetime.datetime.strptime(self.end_time, "%d-%m-%Y %H-%M-%S %f")
+            workTime = str(dateF - dateD)
+        if self.current_ext:
+            extraction = str(self.current_ext)
+        self.exit_callback(self, error_level, error_msg, workTime, extraction)
 
     def close_connection(self):
         self.alive = False
@@ -143,7 +158,8 @@ class ClientHandling(Thread):
                         self.resume_session.write_and_flush(f"Extraction number : {self.current_ext}\n")
                     else:
                         self.resume_session.remove_end_line()
-                    self.resume_session.write_and_flush(f"End time : {utility.get_current_time()}")
+                    self.end_time = utility.get_current_time()
+                    self.resume_session.write_and_flush(f"End time : {self.end_time}")
 
             elif infos[0] == "START":
                 utility.create_directories(self.sn)
@@ -154,10 +170,12 @@ class ClientHandling(Thread):
                 self.field.close()
                 self.resume_session = utility.Logger(f"{self.sn}/{infos[1]}/session_resume.txt", add_time=False)
                 self.resume_session.write_and_flush(f"Start time : {infos[1]}\n")
+                self.start_time = f"{infos[1]}"
                 self.resume_session.write_and_flush(f"Voltage at start : {infos[2]}\n")
                 self.resume_session.write_and_flush(f"Treated plant : {infos[3]}\n")
                 self.resume_session.write_and_flush("Extraction number : {}\n")
-                self.resume_session.write_and_flush("End time :")
+                self.end_time = utility.get_current_time()
+                self.resume_session.write_and_flush(f"End time : {self.end_time}")
             elif infos[0] == "STOP":
                 if self.resume_session is not None:
                     if len(infos) == 3:
@@ -166,7 +184,8 @@ class ClientHandling(Thread):
                         self.resume_session.write_and_flush(f"Extraction number : {infos[2]}\n")
                     else:
                         self.resume_session.remove_end_line()
-                    self.resume_session.write_and_flush(f"End time : {utility.get_current_time()}")
+                    self.end_time = utility.get_current_time()
+                    self.resume_session.write_and_flush(f"End time : {self.end_time}")
                             
     def run(self):
         try:

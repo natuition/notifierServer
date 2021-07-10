@@ -3,6 +3,8 @@ import datetime
 import os
 from time import sleep
 import psutil
+from pytz import timezone
+
 
 class TrajectorySaver:
     """Provides safe gps points saving (robot's trajectory)"""
@@ -91,7 +93,7 @@ class Logger:
 def get_current_time():
     """Returns current time as formatted string"""
 
-    return datetime.datetime.now().strftime("%d-%m-%Y %H-%M-%S %f")
+    return datetime.datetime.now(timezone('Europe/Berlin')).strftime("%d-%m-%Y %H-%M-%S %f")
 
 
 def create_directories(*args):
