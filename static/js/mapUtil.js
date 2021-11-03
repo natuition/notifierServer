@@ -99,6 +99,29 @@ function createMap(){
                     ]
             }
         });
+        map.addSource('pathRobot', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': []
+                }
+            }
+        });
+        map.addLayer({
+            'id': 'pathRobotLayer',
+            'type': 'line',
+            'source': 'pathRobot',
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round',
+            },
+            'paint': {
+                'line-color': 'darkblue',
+                'line-width': 2
+            }
+        });
 
         var v=decodeURI(window.location.href).split('map/')[1];
         socketMap.emit('data', {'sn': v.split("/")[0], 'session': (v.split("/")[1])});
@@ -112,6 +135,7 @@ function createMap(){
 
 socketMap.on('updatePoints', function(dataServ) {
     var points = [];
+    var coordsPoints=[];
     dataServ.forEach((coordAndExt) => {
         coord = coordAndExt[0];
         ext = coordAndExt[1];
@@ -134,11 +158,22 @@ socketMap.on('updatePoints', function(dataServ) {
                 "properties": Object.assign({}, {'Type':Object.keys(ext)[0]}, ext)
             });
         }
+        coordsPoints.push([coord[1],coord[0]]);
     });
+
+    console.log(coordsPoints);
    
     map.getSource('points').setData({
         'type': 'FeatureCollection',
         'features': points
+    });
+
+    map.getSource('pathRobot').setData({
+        'type': 'Feature',
+        'geometry': {
+            'type': 'LineString',
+            'coordinates': coordsPoints
+        }
     });
 
     if(!zoomOn){
