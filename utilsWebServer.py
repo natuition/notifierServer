@@ -48,25 +48,28 @@ def getWorkingTime():
     for sn,resumes in all_session_resume.items():
         if sn not in data: data[sn] = list()
         for resume in resumes:
-            with open(resume, 'r') as file:
-                lines = file.readlines()
-                start = lines[0].replace("\n","").split(":")[1].split(" ")
-                start_format =  start[1].split("-")[2].replace(" ","")+"-"+\
-                                start[1].split("-")[1].replace(" ","")+"-"+\
-                                start[1].split("-")[0].replace(" ","")+"T"+\
-                                start[2].split("-")[0].replace(" ","")+":"+\
-                                start[2].split("-")[1].replace(" ","")+":"+\
-                                start[2].split("-")[2].replace(" ","")+"."+\
-                                start[3]
-                end = lines[4].replace("\n","").split(":")[1].split(" ")
-                end_format =  end[1].split("-")[2].replace(" ","")+"-"+\
-                                end[1].split("-")[1].replace(" ","")+"-"+\
-                                end[1].split("-")[0].replace(" ","")+"T"+\
-                                end[2].split("-")[0].replace(" ","")+":"+\
-                                end[2].split("-")[1].replace(" ","")+":"+\
-                                end[2].split("-")[2].replace(" ","")+"."+\
-                                end[3]
-                data[sn].append({"start":start_format,"end":end_format})
+            try:
+                with open(resume, 'r') as file:
+                    lines = file.readlines()
+                    start = lines[0].replace("\n","").split(":")[1].split(" ")
+                    start_format =  start[1].split("-")[2].replace(" ","")+"-"+\
+                                    start[1].split("-")[1].replace(" ","")+"-"+\
+                                    start[1].split("-")[0].replace(" ","")+"T"+\
+                                    start[2].split("-")[0].replace(" ","")+":"+\
+                                    start[2].split("-")[1].replace(" ","")+":"+\
+                                    start[2].split("-")[2].replace(" ","")+"."+\
+                                    start[3]
+                    end = lines[4].replace("\n","").split(":")[1].split(" ")
+                    end_format =  end[1].split("-")[2].replace(" ","")+"-"+\
+                                    end[1].split("-")[1].replace(" ","")+"-"+\
+                                    end[1].split("-")[0].replace(" ","")+"T"+\
+                                    end[2].split("-")[0].replace(" ","")+":"+\
+                                    end[2].split("-")[1].replace(" ","")+":"+\
+                                    end[2].split("-")[2].replace(" ","")+"."+\
+                                    end[3]
+                    data[sn].append({"start":start_format,"end":end_format})
+            except:
+                pass
     return data
 
 @app.route('/map/<sn>/<session>')
