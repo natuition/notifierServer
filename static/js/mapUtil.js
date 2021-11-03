@@ -62,6 +62,7 @@ function createMap(){
     }
 
     map.on('load', function () {
+        //Path point robot
         map.addSource('points', {
             'type': 'geojson',
             'data': {
@@ -95,10 +96,11 @@ function createMap(){
                     '#3BA3BC', // cyan
                     'Mallow',
                     '#800080', // purple
-                    /* other */ 'darkblue'
+                    /* other */ 'red'
                     ]
             }
         });
+        //Path line robot
         map.addSource('pathRobot', {
             'type': 'geojson',
             'data': {
@@ -118,8 +120,58 @@ function createMap(){
                 'line-cap': 'round',
             },
             'paint': {
-                'line-color': 'darkblue',
+                'line-color': 'red',
                 'line-width': 2
+            }
+        });
+        //Field zone
+        map.addSource('field', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'geometry': {
+                    'type': 'Polygon',
+                    'coordinates': [
+                        coords_field
+                    ]
+                }
+            }
+        }); 
+        map.addLayer({
+            'id': 'fieldLayer',
+            'type': 'fill',
+            'source': 'field',
+            'layout': {},
+            'paint': {
+                'fill-color': '#0620FB',
+                'fill-opacity': 0.4
+            }
+        });
+
+        coords_field.push(coords_field.at(0))
+
+        //Field line
+        map.addSource('field_corner', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': coords_field
+                }
+            }
+        });    
+        map.addLayer({
+            'id': 'field_cornerLayer',
+            'type': 'line',
+            'source': 'field_corner',
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round',
+            },
+            'paint': {
+                'line-color': '#0620FB',
+                'line-width': 4
             }
         });
 

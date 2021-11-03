@@ -46,6 +46,11 @@
 </head>
 
 <body>
+    <script>
+        {% if coords_field is defined %}
+        var coords_field = {{coords_field}};
+        {% endif %}
+    </script>
     <div id="map"></div>
     <p id="calculated-area"></p>
     <script type="text/javascript" src="{{ url_for('static', filename='js/mapUtil.js') }}"></script> 

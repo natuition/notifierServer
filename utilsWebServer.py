@@ -73,7 +73,14 @@ def getWorkingTime():
 def maps(sn,session):
     with open(os.path.abspath(os.getcwd())+f"/{sn}/{session}/session_resume.txt", 'r') as file:
         data=file.readlines()
-    return render_template('map.html',data=data)
+    with open(os.path.abspath(os.getcwd())+f"/{sn}/{session}/field.txt", 'r') as file:
+        points = file.readlines()
+                
+    coords_field = list()
+    for coord in points:
+        coord = coord.replace("[","").replace("]","").replace("\n","").split(",")
+        coords_field.append([float(coord[1]),float(coord[0])])
+    return render_template('map.html',data=data,coords_field=coords_field)
 
 @app.route('/')
 def index():
