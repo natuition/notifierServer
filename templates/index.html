@@ -1,0 +1,70 @@
+<!doctype html>
+<style>
+a {
+  outline: none;
+  text-decoration: none;
+  padding: 2px 1px 0;
+}
+
+a:link {
+  color: #265301;
+}
+
+a:visited {
+  color: #437A16;
+}
+
+a:focus {
+  border-bottom: 1px solid;
+  background: #BAE498;
+}
+
+a:hover {
+  border-bottom: 1px solid;
+  background: #CDFEAA;
+}
+
+a:active {
+  background: #265301;
+  color: #CDFEAA;
+}
+</style>
+<script>
+    function a(classes) {
+        button = document.getElementById(classes)
+        if(button.getAttribute("show") == "off"){
+            var all = document.getElementsByClassName(classes);
+            for (var i = 0; i < all.length; i++) {
+                console.log(all[i])
+                all[i].style.display = 'block';
+                console.log(all[i])
+            }
+            button.setAttribute("show","on")
+        }else{
+            var all = document.getElementsByClassName(classes);
+            for (var i = 0; i < all.length; i++) {
+                console.log(all[i])
+                all[i].style.display = 'none';
+                console.log(all[i])
+            }
+            button.setAttribute("show","off")
+        }
+    }
+</script>
+<title>Path: {{ tree.name }}</title>
+<h1>{{ tree.name }}</h1>
+<ul>
+{%- for item in tree.children recursive %}
+    {% if 'SN' in item.name %}
+    <li> <a id="{{ item.name }}" onClick="a('{{ item.name }}');" style="cursor: pointer; cursor: hand;" show="off">
+    {% else %}
+    <li class="{{ item.father }}" style="display: none;" > <a href="/map/{{ item.father }}/{{ item.name }}">
+    {%- endif %}
+    {{ item.name }}
+    </a>
+    {%- if item.children -%}
+        <ul>{{ loop(item.children) }}</ul>
+    {%- endif %}
+    </li>
+{%- endfor %}
+</ul>

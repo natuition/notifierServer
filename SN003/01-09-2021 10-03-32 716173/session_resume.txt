@@ -1,0 +1,5 @@
+Start time : 01-09-2021 10-03-32 716173
+Voltage at start : 13.0
+Treated plant : ['Plantain_great', 'Dandellion', 'Daisy', 'Plantain_narrowleaf', 'Porcelle']
+Extraction number : {}
+End time : 01-09-2021 10-04-09 208137
