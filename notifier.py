@@ -41,8 +41,8 @@ class Notifier:
         message = bot.send_message(chat_id=chat_id, text=message+suf_msg)
 
     def sendNotifications(self, message: str, clients: list, tokens: dict, sn: str, translate: dict, language: str):
-        msg = f"{sn} : " + translate["Messages"][message]["fr"]
-        self.sendTelegramMsg(tokens["telegram"],tokens["chat_id"],msg,clients)
+        # msg = f"{sn} : " + translate["Messages"][message]["fr"]
+        # self.sendTelegramMsg(tokens["telegram"],tokens["chat_id"],msg,clients)
         if clients:
             msg = f"{sn} : " + translate["Messages"][message][language]
             self.send_sms_post(tokens["sms"],msg,clients)

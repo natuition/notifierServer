@@ -44,7 +44,7 @@ def getWorkingTime():
     lst = [name for name in os.listdir(path) if "SN" in name]
     for sn in lst:
         all_session_resume[sn] = [sn+"/"+name+"/session_resume.txt" for name in os.listdir(path+"/"+sn)]
-    data = dict();
+    data = dict()
     for sn,resumes in all_session_resume.items():
         if sn not in data: data[sn] = list()
         for resume in resumes:
@@ -71,7 +71,9 @@ def getWorkingTime():
 
 @app.route('/map/<sn>/<session>')
 def maps(sn,session):
-    return render_template('map.html')
+    with open(os.path.abspath(os.getcwd())+f"/{sn}/{session}/session_resume.txt", 'r') as file:
+        data=file.readlines()
+    return render_template('map.html',data=data)
 
 @app.route('/')
 def index():

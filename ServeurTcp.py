@@ -62,13 +62,24 @@ class Server(Thread):
             
         self.notifier.sendNotifications(msg, clients, self.tokens, sn, self.translate, language)
 
-    def client_handling_stopped(self, client, error_level, error_msg, workTime=None, extraction=None):
+        return clients
+
+    def client_handling_stopped(self, client, error_level, error_msg, workTime=None, extraction=None, urlMap=""):
+        msg = ""
+
         if error_msg in [SyntheseRobot.HS,ErrorMessages.CLOSED,ErrorMessages.LOST]:
-            self.sendNotification(client.address[0],error_msg)
+            clients = self.sendNotification(client.address[0],error_msg)
+            msg += f"{self.robots[client.address[0]]} : {self.translate['Messages'][error_msg]['fr']}"
+        
         if workTime is not None:
-            self.notifier.sendTelegramMsg(self.tokens["telegram"],self.tokens["chat_id"],f"{self.robots[client.address[0]]} : Temps de travail : {workTime}",list(),False)
+            workTimeS = str(workTime).split(".")[0]
+            msg += f"\n{self.robots[client.address[0]]} : Temps de travail : {workTimeS}"
         if extraction is not None:
-            self.notifier.sendTelegramMsg(self.tokens["telegram"],self.tokens["chat_id"],f"{self.robots[client.address[0]]} : Nombre d'extraction {extraction}",list(),False)
+            msg += f"\n{self.robots[client.address[0]]} : Nombre d'extraction {extraction}"
+        msg+=urlMap
+        if msg != "":
+            self.notifier.sendTelegramMsg(self.tokens["telegram"],self.tokens["chat_id"],msg,clients,True)
+
         self.client_pool = [client for client in self.client_pool if client.alive]
 
     def run(self):
@@ -85,15 +96,14 @@ class Server(Thread):
                 print(f"[{address[0]}] connected")
             
             msg = f"{self.robots[address[0]]} : " + self.translate["Messages"]["Robot_ON"]["fr"]
-            self.notifier.sendTelegramMsg(self.tokens["telegram"],self.tokens["chat_id"],msg,list(),False)
-            client_handling = ClientHandling(client, address, self.client_handling_stopped,self.robots[address[0]])
+            client_handling = ClientHandling(client, address, self.client_handling_stopped,self.robots[address[0]],msg,self.notifier,self.tokens)
             client_handling.start()
             self.client_pool.append(client_handling)
 
 
 class ClientHandling(Thread):
 
-    def __init__(self, client, address, exit_callback, sn):
+    def __init__(self, client, address, exit_callback, sn, msg, notifier: Notifier, tokens):
         Thread.__init__(self)
         self.client = client
         self.address = address
@@ -106,6 +116,10 @@ class ClientHandling(Thread):
         self.end_time = None
         self.current_ext = dict()
         self.client.settimeout(10)
+        self.msg = msg
+        self.notifier = notifier
+        self.tokens = tokens
+        self.urlMap = ""
 
     def _stop(self, error_level: ErrorLevels, error_msg: ErrorMessages):
         self.alive = False
@@ -122,7 +136,7 @@ class ClientHandling(Thread):
             workTime = str(dateF - dateD)
         if self.current_ext:
             extraction = str(self.current_ext)
-        self.exit_callback(self, error_level, error_msg, workTime, extraction)
+        self.exit_callback(self, error_level, error_msg, workTime, extraction, self.urlMap)
 
     def close_connection(self):
         self.alive = False
@@ -164,6 +178,10 @@ class ClientHandling(Thread):
             elif infos[0] == "START":
                 utility.create_directories(self.sn)
                 utility.create_directories(f"{self.sn}/{infos[1]}")
+                sessionNumber = str(infos[1]).replace(" ","%20")
+                self.urlMap = f"\nhttp://172.16.0.9/map/{self.sn}/{sessionNumber}"
+                self.msg += self.urlMap
+                self.notifier.sendTelegramMsg(self.tokens["telegram"],self.tokens["chat_id"],self.msg,list(),False) 
                 self.field = utility.Logger(f"{self.sn}/{infos[1]}/field.txt", add_time=False)
                 for coord in eval(infos[4]):
                     self.field.write_and_flush(f"{coord}\n")
@@ -213,14 +231,10 @@ def say_hello():
     
 
 if __name__ == "__main__":
-    schedule.every().day.at("06:00").do(say_hello)
+    # schedule.every().day.at("06:00").do(say_hello)
     try:
         server = Server()
         server.start()
-        while True:
-            schedule.run_pending()
-            time.sleep(1)
-            continue
 
     except KeyboardInterrupt:
         server.stop()
