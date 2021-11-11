@@ -11,7 +11,7 @@ function createMap(){
     map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/satellite-v9',
-        zoom: 18
+        zoom: 19
     });
 
     var draw = new MapboxDraw({
@@ -229,7 +229,14 @@ socketMap.on('updatePoints', function(dataServ) {
     });
 
     if(!zoomOn){
-        map.panTo(points[points.length - 1]['geometry']['coordinates']);
+        console.log("test")
+        var lat=0;
+        var long=0;
+        for (let i = 0; i < points.length; i++) {
+            lat += points[i]['geometry']['coordinates'][0];
+            long += points[i]['geometry']['coordinates'][1];
+        }
+        map.panTo([lat/points.length,long/points.length]);
         zoomOn = true;
     }
 });
