@@ -28,8 +28,8 @@ class Notifier:
             url = str(query.data).replace("pdf_","")
             session_hours = url.rsplit("/",1)[1].split("%20")[1]
             session_date = url.rsplit("/",1)[1].split("%20")[0]
-            session_hours_str = session_hours.replace("-","/")
-            session_date_str = session_date.replace("-",":")
+            session_hours_str = session_hours.replace("-",":")
+            session_date_str = session_date.replace("-","/")
             
             msg = self.updater.bot.send_message(chat_id=query.from_user.id, text=f"Génération du pdf de la session du {session_date_str} à {session_hours_str}, veuillez patienter...")
             
