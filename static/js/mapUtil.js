@@ -11,7 +11,7 @@ function createMap(){
     map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/satellite-v9',
-        zoom: 19
+        zoom: 18
     });
 
     var draw = new MapboxDraw({

@@ -32,7 +32,7 @@ class Server(Thread):
         self.running = False
         self.client_pool = []
         self.getConfig()
-        self.notifier = Notifier()
+        self.notifier = Notifier(self.tokens["telegram"])
 
     def getConfig(self):
         with open('./config.json') as json_file:
@@ -78,13 +78,13 @@ class Server(Thread):
             msg += f"\n{self.robots[client.address[0]]} : Nombre d'extraction {extraction}"
         msg+=urlMap
         if msg != "":
-            self.notifier.sendTelegramMsg(self.tokens["telegram"],self.tokens["chat_id"],msg,clients,True)
+            self.notifier.sendTelegramMsg(self.tokens["chat_id"],msg,clients,True,buttons={"Générer le pdf":f"pdf_{urlMap[1:]}"})
 
         self.client_pool = [client for client in self.client_pool if client.alive]
 
     def run(self):
         print("Server start...")
-        self.notifier.sendTelegramMsg(self.tokens["telegram"],self.tokens["chat_id"],"Serveur de notification lancé !",list(),False)
+        self.notifier.sendTelegramMsg(self.tokens["chat_id"],"Serveur de notification lancé !",list(),False)
         self.running = True
         self.socket.listen(5)
         while self.running:
@@ -181,7 +181,7 @@ class ClientHandling(Thread):
                 sessionNumber = str(infos[1]).replace(" ","%20")
                 self.urlMap = f"\nhttp://172.16.0.9/map/{self.sn}/{sessionNumber}"
                 self.msg += self.urlMap
-                self.notifier.sendTelegramMsg(self.tokens["telegram"],self.tokens["chat_id"],self.msg,list(),False) 
+                self.notifier.sendTelegramMsg(self.tokens["chat_id"],self.msg,list(),False) 
                 self.field = utility.Logger(f"{self.sn}/{infos[1]}/field.txt", add_time=False)
                 for coord in eval(infos[4]):
                     self.field.write_and_flush(f"{coord}\n")
@@ -227,7 +227,7 @@ def say_hello():
     with open('./config.json') as json_file:
         config = json.load(json_file)
         tokens = config["Tokens"]
-        notifier.sendTelegramMsg(tokens["telegram"],tokens["chat_id"],"Bonjour, bonne journée à vous ;)",list(),False)
+        notifier.sendTelegramMsg(tokens["chat_id"],"Bonjour, bonne journée à vous ;)",list(),False)
     
 
 if __name__ == "__main__":
