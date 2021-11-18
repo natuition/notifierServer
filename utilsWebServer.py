@@ -35,6 +35,7 @@ def get_path(sn,session):
             if ":" in line:
                 path.append((eval(line.replace("\n","").split(":")[0]),eval(line.replace("\n","").split(":",maxsplit=1)[1])))
             else:
+                line = line.split("]")[0]+"]"
                 path.append((eval(line.replace("\n","")),None))
     return path
 
@@ -74,16 +75,28 @@ def getWorkingTime():
 
 @app.route('/map/<sn>/<session>')
 def maps(sn,session):
+    data = []
     with open(os.path.abspath(os.getcwd())+f"/{sn}/{session}/session_resume.txt", 'r') as file:
         data=file.readlines()
     with open(os.path.abspath(os.getcwd())+f"/{sn}/{session}/field.txt", 'r') as file:
         points = file.readlines()
+    last_gps_quality = "-"
+    try:
+        with open(os.path.abspath(os.getcwd())+f"/{sn}/{session}/path_gps_with_extract.txt", 'r') as file:
+            last_line = file.readlines()[-1]
+            last_line = last_line.split("]")[0]+"]"
+            last_line_list = eval(last_line)
+            last_gps_quality = last_line_list[2]
+    except:
+        pass
+
+    data.append(f"Last gps quality : {last_gps_quality}")
                 
     coords_field = list()
     for coord in points:
         coord = coord.replace("[","").replace("]","").replace("\n","").split(",")
         coords_field.append([float(coord[1]),float(coord[0])])
-    return render_template('map.html',data=data,coords_field=coords_field)
+    return render_template('map.html',data=data,coords_field=coords_field,last_gps_quality=last_gps_quality)
 
 @app.route('/')
 def index():
@@ -94,4 +107,5 @@ def resume():
     return render_template('resume.html')
 
 if __name__ == "__main__":
-    app.run(host="172.16.0.9",port=80,debug=True, use_reloader=False)
+    #host="172.16.0.9"
+    app.run(host="0.0.0.0",port=80,debug=True, use_reloader=False)
