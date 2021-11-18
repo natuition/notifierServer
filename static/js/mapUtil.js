@@ -2,6 +2,7 @@ var socketMap = io.connect('http://' + document.domain + ':' + location.port + '
     
 var map;
 var zoomOn = false;
+var traveled_distance = 0;
 
 document.addEventListener("DOMContentLoaded",createMap());
 
@@ -213,7 +214,22 @@ socketMap.on('updatePoints', function(dataServ) {
         coordsPoints.push([coord[1],coord[0]]);
     });
 
-    console.log(coordsPoints);
+    distance = Math.round(turf.length(turf.lineString(coordsPoints), {units: 'kilometers'})*1000 * 100) / 100
+    
+    if(traveled_distance != distance){
+        var element =  document.getElementById('work_distance');
+        if (typeof(element) != 'undefined' && element != null){
+            element.innerText = "Traveled distance (m) : "+distance;
+        }else{
+            var tag = document.createElement("p");
+            var text = document.createTextNode("Traveled distance (m) : "+distance);
+            tag.setAttribute("id","work_distance");
+            tag.appendChild(text);
+            var element = document.getElementById("stats");
+            element.appendChild(tag);
+        }
+        traveled_distance = distance
+    }
    
     map.getSource('points').setData({
         'type': 'FeatureCollection',
@@ -229,7 +245,6 @@ socketMap.on('updatePoints', function(dataServ) {
     });
 
     if(!zoomOn){
-        console.log("test")
         var lat=0;
         var long=0;
         for (let i = 0; i < points.length; i++) {
