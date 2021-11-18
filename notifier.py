@@ -37,7 +37,7 @@ class Notifier:
             pdf_name = "resume"
 
             if not os.path.exists(f"{dirctory_log}/{pdf_name}.pdf"):
-                generatePdf("utils_generate/template", f"{dirctory_log}/{pdf_name}", url)
+                generatePdf("utils_generate/template", f"{dirctory_log}/{pdf_name}", url.replace("172.16.0.9","127.0.0.1"))
 
             self.updater.bot.send_document( chat_id=query.from_user.id, 
                                             document=open(f"{dirctory_log}/{pdf_name}.pdf", 'rb'),

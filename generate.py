@@ -13,6 +13,7 @@ import requests
 import matplotlib.pyplot as plt
 from backports.datetime_fromisoformat import MonkeyPatch
 MonkeyPatch.patch_fromisoformat()
+from haversine import haversine
 
 def takeScreenshot(url: str, file_name: str):
 
@@ -26,7 +27,7 @@ def takeScreenshot(url: str, file_name: str):
     
     driver.get(url)
 
-    sleep(12)
+    sleep(45)
 
     driver.get_screenshot_as_file(file_name)
     driver.quit()
@@ -59,6 +60,15 @@ def generatePdf(template_name: str, generate_name: str, map_url: str):
     start = re.findall("Start time : (.*)", html)[0]
     end = re.findall("End time : ([^<]*)", html)[0]
     extracted_plant = re.findall("Extraction number : (.*)", html)[0]
+    travel_distance = re.findall("Traveled distance \(m\) : ([^<]*)", html)[0]
+    field = eval(re.findall("var coords_field = (.*);", html)[0])
+    field[0].reverse()
+    field[1].reverse()
+    field[2].reverse()
+    field[3].reverse()
+    field_surface = round((haversine(field[0],field[1])*1000) * (haversine(field[1],field[2])*1000))
+
+    surface_covered = round(float(travel_distance)*0.33)
 
     dict_extract_plant = eval(extracted_plant.replace("&#39;",'"'))
 
@@ -118,6 +128,8 @@ def generatePdf(template_name: str, generate_name: str, map_url: str):
     can.drawString(485, 762, fields["end_time"])
     can.drawString(156, 786, fields["date"])
     can.drawString(190, 358, fields["time"])
+    can.drawString(186, 700, str(field_surface).rjust(6))
+    can.drawString(509, 700, str(surface_covered).rjust(6))
     can.drawString(195, 143, str(formated_extracted_plant[0]).rjust(6))
     can.drawString(195, 115, str(formated_extracted_plant[1]).rjust(6))
     can.drawString(195, 87, str(formated_extracted_plant[2]).rjust(6))
@@ -135,6 +147,6 @@ def generatePdf(template_name: str, generate_name: str, map_url: str):
     output.write(outputStream)
 
 if __name__ == "__main__":
-    url = "http://172.16.0.9/map/SN000/12-11-2021%2022-48-37%20200699"
+    url = "http://127.0.0.1/map/SN000/18-11-2021%2023-03-04%20157124"
     res_name =  "output"
     generatePdf("utils_generate/template", res_name, url)
