@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+SN*
+
+.vscode/
+utils_generate/map.png
+utils_generate/stats.png
