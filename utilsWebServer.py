@@ -2,6 +2,11 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 import os 
 import json
+from haversine import haversine
+
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode=None, logger=False, engineio_logger=False)
@@ -76,6 +81,7 @@ def getWorkingTime():
 @app.route('/map/<sn>/<session>')
 def maps(sn,session):
     data = []
+    path_robot = []
     with open(os.path.abspath(os.getcwd())+f"/{sn}/{session}/session_resume.txt", 'r') as file:
         data=file.readlines()
     with open(os.path.abspath(os.getcwd())+f"/{sn}/{session}/field.txt", 'r') as file:
@@ -83,20 +89,43 @@ def maps(sn,session):
     last_gps_quality = "-"
     try:
         with open(os.path.abspath(os.getcwd())+f"/{sn}/{session}/path_gps_with_extract.txt", 'r') as file:
-            last_line = file.readlines()[-1]
-            last_line = last_line.split("]")[0]+"]"
-            last_line_list = eval(last_line)
-            last_gps_quality = last_line_list[2]
+            path_robot = file.readlines() 
+            last_line = path_robot[-1]
+            if isinstance(last_line,list):
+                last_line_list = last_line
+            else:
+                last_line = last_line.split("]")[0]+"]"
+                last_line_list = eval(last_line)
+            if len(last_line_list) > 2:
+                last_gps_quality = last_line_list[2]
+            path_robot.append(last_line_list[0:2])
     except:
         pass
 
     data.append(f"Last gps quality : {last_gps_quality}")
+
+    traveled_distance = 0
+
+    before = None
+    for point_str in path_robot:
+        if isinstance(point_str,list):
+            point_list = point_str
+        else:
+            point_str = point_str.split("]")[0]+"]"
+            point_list = eval(point_str)
+        if before is not None:
+            traveled_distance += haversine(before,point_list[0:2])
+        before = point_list[0:2]
+
+    traveled_distance *= 1000
+
+    traveled_distance = round(traveled_distance, 2)
                 
     coords_field = list()
     for coord in points:
         coord = coord.replace("[","").replace("]","").replace("\n","").split(",")
         coords_field.append([float(coord[1]),float(coord[0])])
-    return render_template('map.html',data=data,coords_field=coords_field,last_gps_quality=last_gps_quality)
+    return render_template('map.html',data=data,coords_field=coords_field,traveled_distance=traveled_distance)
 
 @app.route('/')
 def index():
