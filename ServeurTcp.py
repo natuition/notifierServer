@@ -12,6 +12,7 @@ DEBUG = False
 class SyntheseRobot:
     OP = "Robot_OP"
     HS = "Robot_HS"
+    ANTI_THEFT = "Robot_ANTI_THEFT"
 
 class ErrorLevels:
     OK = "OK"
@@ -45,6 +46,7 @@ class Server(Thread):
 
     def stop(self):
         print("Server shutdown...")
+        self.notifier.sendTelegramMsg(self.tokens["chat_id"],"Serveur de notification arrêté !",list(),False)
         if self.client_pool :
             for client in self.client_pool:
                 client.close_connection()
@@ -82,6 +84,14 @@ class Server(Thread):
 
         self.client_pool = [client for client in self.client_pool if client.alive]
 
+    def send_anti_theft(self, client, leave_area : bool):
+        if leave_area:
+            msg = "Leave_area"
+        else:
+            msg = "Enter_area"
+        clients = self.sendNotification(client.address[0],msg)
+        self.notifier.sendTelegramMsg(self.tokens["chat_id"],f"{self.robots[client.address[0]]} : {self.translate['Messages'][msg]['fr']}",clients,True)
+
     def run(self):
         print("Server start...")
         self.notifier.sendTelegramMsg(self.tokens["chat_id"],"Serveur de notification lancé !",list(),False)
@@ -96,14 +106,14 @@ class Server(Thread):
                 print(f"[{address[0]}] connected")
             
             msg = f"{self.robots[address[0]]} : " + self.translate["Messages"]["Robot_ON"]["fr"]
-            client_handling = ClientHandling(client, address, self.client_handling_stopped,self.robots[address[0]],msg,self.notifier,self.tokens)
+            client_handling = ClientHandling(client, address, self.client_handling_stopped,self.robots[address[0]],msg,self.notifier,self.tokens,self.send_anti_theft)
             client_handling.start()
             self.client_pool.append(client_handling)
 
 
 class ClientHandling(Thread):
 
-    def __init__(self, client, address, exit_callback, sn, msg, notifier: Notifier, tokens):
+    def __init__(self, client, address, exit_callback, sn, msg, notifier: Notifier, tokens, send_anti_theft):
         Thread.__init__(self)
         self.client = client
         self.address = address
@@ -120,6 +130,8 @@ class ClientHandling(Thread):
         self.notifier = notifier
         self.tokens = tokens
         self.urlMap = ""
+        self.send_anti_theft = send_anti_theft
+        self.anti_theft = False
 
     def _stop(self, error_level: ErrorLevels, error_msg: ErrorMessages):
         self.alive = False
@@ -151,6 +163,10 @@ class ClientHandling(Thread):
 
             infos = message.split(";")
             if infos[1] == SyntheseRobot.OP:
+
+                if self.anti_theft:
+                    self.anti_theft = False
+                    self.send_anti_theft(self, self.anti_theft)
 
                 if self.path_gps_with_extract is None:
                     self.path_gps_with_extract = utility.Logger(f"{self.sn}/{infos[0]}/path_gps_with_extract.txt", add_time=False)
@@ -204,6 +220,11 @@ class ClientHandling(Thread):
                         self.resume_session.remove_end_line()
                     self.end_time = utility.get_current_time()
                     self.resume_session.write_and_flush(f"End time : {self.end_time}")
+
+            elif infos[1] == SyntheseRobot.ANTI_THEFT:
+                if not self.anti_theft:
+                    self.anti_theft = True
+                    self.send_anti_theft(self, self.anti_theft)
                             
     def run(self):
         try:
@@ -231,11 +252,13 @@ def say_hello():
     
 
 if __name__ == "__main__":
-    # schedule.every().day.at("06:00").do(say_hello)
     try:
         server = Server()
         server.start()
-
+        while True:
+            pass
     except KeyboardInterrupt:
+        print("Ctrl+c are catch...")
+    finally:
         server.stop()
         server.join()

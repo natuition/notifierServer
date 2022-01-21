@@ -1,8 +1,8 @@
 {
     "Tokens": {
-        "sms": "change",
-        "telegram": "change",
-        "chat_id": "change"
+        "sms": "",
+        "telegram": "",
+        "chat_id": ""
     },
     "Translate": {
         "Supported Language": [
@@ -17,7 +17,7 @@
                 "nl" : "Missie volbracht."
             },
             "Connection_lost": {
-                "fr": "Connexion perdu.",
+                "fr": "Connexion perdue.",
                 "en": "Connection lost.",
                 "nl" : "Verbinding verbroken."
             },
@@ -35,17 +35,35 @@
                 "fr": "Violette s'est éteint.",
                 "en": "Violette is off.",
                 "nl": "Violette is uitgeschakeld."
+            },
+            "Robot_ON": {
+                "fr": "Violette s'est connectée.",
+                "en": "Violet is connected.",
+                "nl": "Violet is verbonden."
+            },
+            "Leave_area": {
+                "fr": "[Alerte Antivol] Violette a quitté le terrain d’exploitation.",
+                "en": "[Anti-Theft Alert] Violette has left the operating field.",
+                "nl": "[Anti-Theft Alert] Violette heeft het operatieveld verlaten."
+            },
+            "Enter_area": {
+                "fr": "[Alerte Antivol] Violette est de retour sur le terrain d’exploitation.",
+                "en": "[Anti-Theft Alert] Violette is back in the field.",
+                "nl": "[Anti-Theft Alert] Violette is terug in het veld."
             }
         }
     },
     "Ip_Robot": {
-        "172.16.3.1": "SN000",
+        "172.16.2.5": "SN000",
         "172.16.4.5": "SN002",
         "172.16.4.9": "SN003",
         "172.16.4.13": "SN004",
         "172.16.4.17": "SN005",
         "172.16.4.21": "SN006",
-        "172.16.4.25": "SN007"
+        "172.16.4.25": "SN007",
+        "172.16.4.1": "SN008",
+        "172.16.4.33": "SN009",
+        "172.16.4.37": "SN010"
     },
     "Robot_Language": {
         "SN000": "fr",
@@ -54,14 +72,14 @@
         "SN004": "nl",
         "SN005": "nl",
         "SN006": "fr",
-        "SN007": "fr"
+        "SN007": "fr",
+        "SN008": "fr",
+        "SN009": "fr",
+        "SN010": "fr"
     },
     "Robot_PhoneNumber": {
-        "SN005": [
-            "0600000000"
-        ],
         "SN006": [
-            "0600000000"
+            "0102030405"
         ]
     }
 }
