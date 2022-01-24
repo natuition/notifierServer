@@ -108,9 +108,13 @@ class Notifier:
             return self.ERROR_API
         return r.text
 
-    def sendTelegramMsg(self, chat_id: str, message: str, sms_destinataires:list, sendingSms=True, buttons : dict=None):
+    def sendTelegramMsg(self, chat_id: str, message: str, sms_destinataires:list, sendingSms=True, buttons : dict=None, sn: str = None, url_map: str = None):
         destinataires = ((((str(sms_destinataires)).replace("'", "")).replace("]", "")).replace("[", "")).replace(" ", "")
         suf_msg=""
+
+        if url_map is not None:
+                suf_msg = url_map
+
         if sendingSms:
             if sms_destinataires : 
                 if len(sms_destinataires) > 1:
@@ -125,15 +129,20 @@ class Notifier:
             for name, data in buttons.items():
                 keyboard.append([InlineKeyboardButton(name, callback_data=data)])
             reply_markup=InlineKeyboardMarkup(keyboard)
-            message = self.updater.bot.send_message(chat_id=chat_id, text=message+suf_msg, reply_markup=reply_markup)
+            msg = self.updater.bot.send_message(chat_id=chat_id, text=message+suf_msg, reply_markup=reply_markup)
+
+            if sn is not None:
+                if sn in self.individual_chat:
+                    msg = self.updater.bot.send_message(chat_id=f"-100{self.individual_chat[sn]}", text=message)
         else:
-            message = self.updater.bot.send_message(chat_id=chat_id, text=message+suf_msg)
+            msg = self.updater.bot.send_message(chat_id=chat_id, text=message+suf_msg)
+            if sn is not None:
+                if sn in self.individual_chat:
+                    msg = self.updater.bot.send_message(chat_id=f"-100{self.individual_chat[sn]}", text=message)
 
     def sendNotifications(self, message: str, clients: list, tokens: dict, sn: str, translate: dict, language: str):
         # msg = f"{sn} : " + translate["Messages"][message]["fr"]
         # self.sendTelegramMsg(tokens["telegram"],tokens["chat_id"],msg,clients)
         msg = f"{sn} : " + translate["Messages"][message][language]
-        if sn in self.individual_chat:
-            self.sendTelegramMsg(f"-100{self.individual_chat[sn]}",msg,list(),False)
         if clients:
             self.send_sms_post(tokens["sms"],msg,clients)

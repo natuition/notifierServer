@@ -78,9 +78,8 @@ class Server(Thread):
             msg += f"\n{self.robots[client.address[0]]} : Temps de travail : {workTimeS}"
         if extraction is not None:
             msg += f"\n{self.robots[client.address[0]]} : Nombre d'extraction {extraction}"
-        msg+=urlMap
         if msg != "":
-            self.notifier.sendTelegramMsg(self.tokens["chat_id"],msg,clients,True,buttons={"Générer le pdf":f"pdf_{urlMap[1:]}"})
+            self.notifier.sendTelegramMsg(self.tokens["chat_id"],msg,clients,True,buttons={"Générer le pdf":f"pdf_{urlMap[1:]}"}, sn=self.robots[client.address[0]], url_map=urlMap)
 
         self.client_pool = [client for client in self.client_pool if client.alive]
 
@@ -90,7 +89,7 @@ class Server(Thread):
         else:
             msg = "Enter_area"
         clients = self.sendNotification(client.address[0],msg)
-        self.notifier.sendTelegramMsg(self.tokens["chat_id"],f"{self.robots[client.address[0]]} : {self.translate['Messages'][msg]['fr']}",clients,True)
+        self.notifier.sendTelegramMsg(self.tokens["chat_id"],f"{self.robots[client.address[0]]} : {self.translate['Messages'][msg]['fr']}",clients,True, sn=self.robots[client.address[0]])
 
     def run(self):
         print("Server start...")
@@ -196,8 +195,7 @@ class ClientHandling(Thread):
                 utility.create_directories(f"{self.sn}/{infos[1]}")
                 sessionNumber = str(infos[1]).replace(" ","%20")
                 self.urlMap = f"\nhttp://172.16.0.9/map/{self.sn}/{sessionNumber}"
-                self.msg += self.urlMap
-                self.notifier.sendTelegramMsg(self.tokens["chat_id"],self.msg,list(),False) 
+                self.notifier.sendTelegramMsg(self.tokens["chat_id"],self.msg,list(),False, sn=self.sn, url_map=self.urlMap) 
                 self.field = utility.Logger(f"{self.sn}/{infos[1]}/field.txt", add_time=False)
                 for coord in eval(infos[4]):
                     self.field.write_and_flush(f"{coord}\n")
@@ -242,13 +240,6 @@ class ClientHandling(Thread):
                 return 
         if self.alive:
             self._stop(ErrorLevels.OK, ErrorMessages.CLOSED)
-
-def say_hello():
-    notifier = Notifier()
-    with open('./config.json') as json_file:
-        config = json.load(json_file)
-        tokens = config["Tokens"]
-        notifier.sendTelegramMsg(tokens["chat_id"],"Bonjour, bonne journée à vous ;)",list(),False)
     
 
 if __name__ == "__main__":
