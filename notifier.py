@@ -6,6 +6,11 @@ import telegram
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CallbackQueryHandler, CallbackContext
 import time
+import json
+
+from telethon.sync import TelegramClient
+from telethon import functions
+import telethon.tl.types
 
 from telegram.files.document import Document
 from generate import generatePdf
@@ -20,6 +25,49 @@ class Notifier:
         self.updater = Updater(token)
         self.updater.dispatcher.add_handler(CallbackQueryHandler(self.button))
         self.updater.start_polling()
+        self.create_individual_channel()
+
+    def create_individual_channel(self):
+        with open('./config.json', "r+") as json_file:
+            config = json.load(json_file)
+            self.individual_chat = config["Individual_chat"]
+            robots = list(config["Ip_Robot"].values())
+            api_id = config["Tokens"]["telegram_api_id"]
+            api_hash = config["Tokens"]["telegram_api_hash"]
+            for robot in robots:
+                if robot not in self.individual_chat:
+                    with TelegramClient("create_channels", api_id, api_hash) as client:
+                        result = client(functions.channels.CreateChannelRequest(
+                            title=f"{robot}",
+                            about=f"Info robot {robot}"
+                        ))
+                        res = client(functions.channels.InviteToChannelRequest(
+                            channel=result.chats[0],
+                            users=['+33615385452']
+                        ))
+                        rights = telethon.tl.types.ChatAdminRights(
+                            change_info=True,
+                            post_messages=True,
+                            edit_messages=True,
+                            delete_messages=True,
+                            ban_users=True,
+                            invite_users=True,
+                            pin_messages=True,
+                            add_admins=True,
+                            anonymous=True,
+                            manage_call=True,
+                            other=True
+                        )
+                        res = client(functions.channels.EditAdminRequest(
+                            channel=result.chats[0], 
+                            user_id='@NatuitionBot', 
+                            admin_rights = rights,
+                            rank="bot"
+                        ))
+                        self.individual_chat[robot] = result.chats[0].id
+            json_file.seek(0)
+            json.dump(config, json_file, indent=4, ensure_ascii=False)
+            json_file.truncate()
 
     def button(self, update: Update, context: CallbackContext) -> None:
         query = update.callback_query
@@ -84,6 +132,8 @@ class Notifier:
     def sendNotifications(self, message: str, clients: list, tokens: dict, sn: str, translate: dict, language: str):
         # msg = f"{sn} : " + translate["Messages"][message]["fr"]
         # self.sendTelegramMsg(tokens["telegram"],tokens["chat_id"],msg,clients)
+        msg = f"{sn} : " + translate["Messages"][message][language]
+        if sn in self.individual_chat:
+            self.sendTelegramMsg(f"-100{self.individual_chat[sn]}",msg,list(),False)
         if clients:
-            msg = f"{sn} : " + translate["Messages"][message][language]
             self.send_sms_post(tokens["sms"],msg,clients)
