@@ -219,6 +219,10 @@ class ClientHandling(Thread):
                     self.end_time = utility.get_current_time()
                     self.resume_session.write_and_flush(f"End time : {self.end_time}")
 
+            elif infos[0] == "CLOSE":
+                self.close_connection()
+                self._stop(ErrorLevels.OK, ErrorMessages.CLOSED)
+
             elif infos[1] == SyntheseRobot.ANTI_THEFT:
                 if not self.anti_theft:
                     self.anti_theft = True
