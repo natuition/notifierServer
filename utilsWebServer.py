@@ -1,19 +1,53 @@
+from cv2 import PROJ_SPHERICAL_ORTHO
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 import os 
 import json
 from haversine import haversine
+from engineio.payload import Payload
 
 import logging
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
+Payload.max_decode_packets = 500
+
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode=None, logger=False, engineio_logger=False)
 
+def get_formated_path(path):
+    points = list()
+    coordsPoints = list()
+    for point in path:
+        coords_with_quality = point[0]
+        coords = [coords_with_quality[1],coords_with_quality[0]]
+        ext = point[1]
+        if ext is None:
+            points.append({
+                'type': 'Feature',
+                'geometry': {
+                    'type': 'Point',
+                    'coordinates': coords
+                }
+            })
+        else:
+            points.append({
+                'type': 'Feature',
+                'geometry': {
+                    'type': 'Point',
+                    'coordinates': coords
+                },
+                "properties":{
+                    'Type' : ext
+                }
+            })
+        coordsPoints.append(coords)
+    return [points,coordsPoints]
+
 @socketio.on('data', namespace='/map')
 def on_socket_get_data_map(data):
-    emit('updatePoints',get_path(data["sn"],data["session"]))
+    path = get_path(data["sn"],data["session"])
+    emit('updatePoints',get_formated_path(path))
 
 @socketio.on('data', namespace='/resume')
 def on_socket_get_data_resume():

@@ -186,36 +186,7 @@ function createMap(){
 
 }
 
-socketMap.on('updatePoints', function(dataServ) {
-    var points = [];
-    var coordsPoints=[];
-    dataServ.forEach((coordAndExt) => {
-        coord = coordAndExt[0];
-        ext = coordAndExt[1];
-        if(ext === null){
-            points.push({
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [coord[1],coord[0]]
-                }
-            });
-        }
-        else{
-            points.push({
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [coord[1],coord[0]]
-                },
-                "properties": Object.assign({}, {'Type':Object.keys(ext)[0]}, ext)
-            });
-        }
-        coordsPoints.push([coord[1],coord[0]]);
-    });
-
-    distance = Math.round(turf.length(turf.lineString(coordsPoints), {units: 'kilometers'})*1000 * 100) / 100
-    
+function updateDistance(distance){
     if(traveled_distance != distance){
         var element =  document.getElementById('work_distance');
         if (typeof(element) != 'undefined' && element != null){
@@ -230,6 +201,15 @@ socketMap.on('updatePoints', function(dataServ) {
         }
         traveled_distance = distance
     }
+}
+
+socketMap.on('updatePoints', function(dataServ) {
+    var points = dataServ[0];
+    var coordsPoints = dataServ[1];
+
+    distance = Math.round(turf.length(turf.lineString(coordsPoints), {units: 'kilometers'})*1000 * 100) / 100
+    
+    updateDistance(distance);
    
     map.getSource('points').setData({
         'type': 'FeatureCollection',
