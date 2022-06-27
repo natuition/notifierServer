@@ -1,10 +1,13 @@
 from cv2 import PROJ_SPHERICAL_ORTHO
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from flask_socketio import SocketIO, emit
 import os 
+import statistics
 import json
+from urllib.parse import quote
 from haversine import haversine
 from engineio.payload import Payload
+import re
 
 import logging
 log = logging.getLogger('werkzeug')
@@ -15,12 +18,45 @@ Payload.max_decode_packets = 500
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode=None, logger=False, engineio_logger=False)
 
+def get_field_feature(field):
+    field.append(field[0])
+    return {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Polygon',
+            'coordinates': [field]
+        },
+        'properties':{
+            'stroke': '#0620fb',
+            'stroke-width': 4,
+            'stroke-opacity': 1,
+            'fill': '#0620fb',
+            'fill-opacity': 0.4,
+            "name":"field"
+        }
+    }
+
+def get_path_feature(path):
+    return {
+        "type": "Feature",
+        "properties": {
+            "stroke": "#ff0000",
+            "stroke-width": 2,
+            "stroke-opacity": 1,
+            "name":"path"
+        },
+        "geometry": {
+            "type": "LineString",
+            "coordinates": path
+        }
+    } 
+
 def get_formated_path(path):
     points = list()
     coordsPoints = list()
     for point in path:
         coords_with_quality = point[0]
-        coords = [coords_with_quality[1],coords_with_quality[0]]
+        coords = [round(coords_with_quality[1], 6),round(coords_with_quality[0],6)]
         ext = point[1]
         if ext is None:
             points.append({
@@ -160,6 +196,78 @@ def maps(sn,session):
         coord = coord.replace("[","").replace("]","").replace("\n","").split(",")
         coords_field.append([float(coord[1]),float(coord[0])])
     return render_template('map.html',data=data,coords_field=coords_field,traveled_distance=traveled_distance)
+
+@app.route('/map_static/<sn>/<session>')
+def map_static(sn,session):
+    data = []
+    path_robot = []
+    with open(os.path.abspath(os.getcwd())+f"/{sn}/{session}/session_resume.txt", 'r') as file:
+        data=file.readlines()
+    with open(os.path.abspath(os.getcwd())+f"/{sn}/{session}/field.txt", 'r') as file:
+        points = file.readlines()
+    last_gps_quality = "-"
+    try:
+        with open(os.path.abspath(os.getcwd())+f"/{sn}/{session}/path_gps_with_extract.txt", 'r') as file:
+            path_robot = file.readlines() 
+            last_line = path_robot[-1]
+            if isinstance(last_line,list):
+                last_line_list = last_line
+            else:
+                last_line = last_line.split("]")[0]+"]"
+                last_line_list = eval(last_line)
+            if len(last_line_list) > 2:
+                last_gps_quality = last_line_list[2]
+            path_robot.append(last_line_list[0:2])
+    except:
+        pass
+
+    data.append(f"Last gps quality : {last_gps_quality}")
+
+    traveled_distance = 0
+
+    before = None
+    for point_str in path_robot:
+        if isinstance(point_str,list):
+            point_list = point_str
+        else:
+            point_str = point_str.split("]")[0]+"]"
+            point_list = eval(point_str)
+        if before is not None:
+            traveled_distance += haversine(before,point_list[0:2])
+        before = point_list[0:2]
+
+    traveled_distance *= 1000
+
+    traveled_distance = round(traveled_distance, 2)
+                
+    coords_field = list()
+    for coord in points:
+        coord = coord.replace("[","").replace("]","").replace("\n","").split(",")
+        coords_field.append([float(coord[1]),float(coord[0])])
+
+    path = get_path(sn,session)
+
+    coords_center = [statistics.mean([coords[0] for coords in coords_field]),statistics.mean([coords[1] for coords in coords_field])]
+    
+    field_feature = get_field_feature(coords_field)
+    path_feature = get_path_feature(get_formated_path(path)[1])
+
+    feature_collection = {"type": "FeatureCollection","features": [field_feature, path_feature]}
+
+    #http://mt1.google.com/vt/lyrs=s&x={x}&y={Y}&z={z}
+    #{tile} = {z}/{x}/{Y}
+    #geojson-renderer --dimensions 1500x700 --tile-url-template "{tile}" map.geojson
+
+    with open('map.geojson', 'w') as outfile:
+        json.dump(feature_collection, outfile)
+
+    os.system("/root/.config/jlauncher/bin/geojson-renderer --dimensions 1920x1080 --tile-url-template 'tile={tile}' map.geojson")
+
+    with open("map.svg", 'r+') as f:
+        svg = f.read()
+        svg = re.sub(r'tile=([0-9]*)\/([0-9]*)\/([0-9]*)', r'http://mt1.google.com/vt/lyrs=s&x=\2&y=\3&z=\1', svg)
+
+    return render_template('map_static.html', svg=svg)
 
 @app.route('/')
 def index():

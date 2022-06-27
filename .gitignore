@@ -133,3 +133,10 @@ SN*
 .vscode/
 utils_generate/map.png
 utils_generate/stats.png
+
+node_modules/
+create_channels.session
+create_sn000.session
+package-lock.json
+package.json
+session_name.session

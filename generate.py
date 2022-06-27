@@ -23,11 +23,12 @@ def takeScreenshot(url: str, file_name: str):
     service = Service("./utils_generate/chrome_driver")
     driver = webdriver.Chrome(options=op, executable_path="./utils_generate/chromedriver")
     driver.set_window_position(0, 0)
-    driver.set_window_size(2450,1140)
+    #driver.set_window_size(2450,1140)
+    driver.set_window_size(2000,2000)
     
     driver.get(url)
 
-    sleep(45)
+    #sleep(45)
 
     driver.get_screenshot_as_file(file_name)
     driver.quit()
@@ -53,7 +54,9 @@ def makeStats(size_of_groups, file_name: str):
 
 def generatePdf(template_name: str, generate_name: str, map_url: str):
 
-    takeScreenshot(map_url, "utils_generate/map.png")
+    url_screen = map_url.replace("map","map_static")
+
+    takeScreenshot(url_screen, "utils_generate/map.png")
 
     html = requests.get(url = map_url).text
 
