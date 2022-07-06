@@ -143,6 +143,5 @@ session_name.session
 map.geojson
 map.svg
 crop_utils_generate/map.jpeg
-.gitignore
 utils_generate/map.jpeg
-.gitignore
+output.pdf
