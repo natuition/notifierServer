@@ -5,6 +5,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from time import sleep
 import os
 import cv2 
@@ -14,35 +15,42 @@ import matplotlib.pyplot as plt
 from backports.datetime_fromisoformat import MonkeyPatch
 MonkeyPatch.patch_fromisoformat()
 from haversine import haversine
+from PIL import Image
 
 def takeScreenshot(url: str, file_name: str):
 
     op = webdriver.ChromeOptions()
     op.add_argument("headless")
     op.add_argument("--no-sandbox");
-    service = Service("./utils_generate/chrome_driver")
-    driver = webdriver.Chrome(options=op, executable_path="./utils_generate/chromedriver")
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
     driver.set_window_position(0, 0)
-    #driver.set_window_size(2450,1140)
-    driver.set_window_size(2000,2000)
-    
+    driver.set_window_size(720,480)
+
     driver.get(url)
 
-    #sleep(45)
-
-    driver.get_screenshot_as_file(file_name)
+    driver.get_screenshot_as_file(file_name.replace("jpeg","png"))
     driver.quit()
 
-    image = cv2.imread(os.getcwd()+"/"+file_name)
-    crop_image = image[0:1080, 0:1920]
-    cv2.imwrite(os.getcwd()+"/"+file_name, crop_image)
+    image = cv2.imread(os.getcwd()+"/"+file_name.replace("jpeg","png"))
+    cv2.imwrite(os.getcwd()+"/"+file_name, image,  [int(cv2.IMWRITE_JPEG_QUALITY), 50])
 
-def makeStats(size_of_groups, file_name: str):
-    colors = ['#91BD55', '#D3DA54', '#3E894A']
-    if size_of_groups == [0,0,0]:
-        plt.pie([1], colors=['#E4E4E3'], startangle=90, counterclock=False)
+    os.remove(os.getcwd()+"/"+file_name.replace("jpeg","png"))
+
+def makeStats(dict_extract_plant_by_number, total_plant, file_name: str):
+    colors = ['#91BD55', '#D4DA54', '#41884B', '#56A973', '#55A974', '#4F9B90']
+
+    if len(dict_extract_plant_by_number) == 0:
+        plt.pie([1], colors=['#E4E4E3'], startangle=90, counterclock=True)
+    elif len(dict_extract_plant_by_number) <= 5 :
+        stats = [number/total_plant for number in dict_extract_plant_by_number.values()]
+        colors_final = colors[0:len(dict_extract_plant_by_number)]
+        plt.pie(stats, colors=colors_final, startangle=90, counterclock=True)
     else:
-        plt.pie(size_of_groups, colors=colors, startangle=90, counterclock=False)
+        stats = [number/total_plant for number in list(dict_extract_plant_by_number.values())[0:3]]
+        last_number = sum([number/total_plant for number in list(dict_extract_plant_by_number.values())[4:]])
+        stats.append(last_number)
+        plt.pie(stats, colors=colors, startangle=90, counterclock=True)
+        
     my_circle=plt.Circle( (0,0), 0.6, color='white', alpha=1)
     p=plt.gcf()
     p.gca().add_artist(my_circle)
@@ -50,19 +58,20 @@ def makeStats(size_of_groups, file_name: str):
 
     image = cv2.imread(os.getcwd()+"/"+file_name)
     crop_image = image[180:790, 360:960]
-    cv2.imwrite(os.getcwd()+"/"+file_name, crop_image)
+    cv2.imwrite(os.getcwd()+"/"+file_name, crop_image,  [int(cv2.IMWRITE_PNG_COMPRESSION), 9])
 
 def generatePdf(template_name: str, generate_name: str, map_url: str):
 
     url_screen = map_url.replace("map","map_static")
 
-    takeScreenshot(url_screen, "utils_generate/map.png")
+    takeScreenshot(url_screen, "utils_generate/map.jpeg")
 
     html = requests.get(url = map_url).text
 
     start = re.findall("Start time : (.*)", html)[0]
     end = re.findall("End time : ([^<]*)", html)[0]
     extracted_plant = re.findall("Extraction number : (.*)", html)[0]
+    treated_plant = re.findall("Treated plant : (.*)", html)[0]
     travel_distance = re.findall("Traveled distance \(m\) : ([^<]*)", html)[0]
     language = re.findall("Language : ([^<]*)", html)[0]
     field = eval(re.findall("var coords_field = (.*);", html)[0])
@@ -74,22 +83,22 @@ def generatePdf(template_name: str, generate_name: str, map_url: str):
 
     surface_covered = round(float(travel_distance)*0.33)
 
-    dict_extract_plant = eval(extracted_plant.replace("&#39;",'"').replace(" ",'').lower())
-
-    index_name_extracted_plant = {"plantain_great": 0,"plantain_narrowleaf": 0, "porcelle" : 1 ,"dandellion" : 2, "dandelion" : 2}
-    formated_extracted_plant = [0,0,0]
+    treated_plant = eval(treated_plant.replace("&#39;",'"').replace(" ",'').lower())
+    dict_extract_plant_by_number = eval(extracted_plant.replace("&#39;",'"').replace(" ",'').lower())
+    dict_extract_plant_by_number = {k: v for k, v in sorted(dict_extract_plant_by_number.items(), key=lambda item: item[1], reverse=True)}
+    plant_not_extract = list()
+    for plant in treated_plant:
+        if plant not in dict_extract_plant_by_number.keys():
+            plant_not_extract.append(plant)
 
     total_plant = 0
 
-    for plant, number in dict_extract_plant.items():
-        if plant in index_name_extracted_plant.keys():
-            formated_extracted_plant[index_name_extracted_plant[plant]] += number
+    for plant, number in dict_extract_plant_by_number.items():
         total_plant+=number
 
-    makeStats(formated_extracted_plant, "utils_generate/stats.png")
+    makeStats(dict_extract_plant_by_number, total_plant, "utils_generate/stats.png")
 
     output = PdfFileWriter()
-    input = PdfFileReader(open(f"{template_name}_{language}.pdf", "rb"),strict=False)
 
     start = start.split(" ")
     start_format =  start[0].split("-")[2].replace(" ","")+"-"+\
@@ -124,33 +133,61 @@ def generatePdf(template_name: str, generate_name: str, map_url: str):
     }
 
     packet = io.BytesIO()
-    can = canvas.Canvas(packet, pagesize=letter)
-    can.drawImage("utils_generate/map.png", 45, 390, 500, 290)
+    can = canvas.Canvas(packet)
+    can.drawImage("utils_generate/map.jpeg", 45, 390, 500, 290)
     can.drawImage("utils_generate/stats.png", 80, 167, 180, 180)
     can.drawImage("utils_generate/cible.png", 125, 211, 90, 90, mask=[250,255,250,255,250,255])
-    can.drawString(485, 787, fields["start_time"])
-    can.drawString(485, 762, fields["end_time"])
-    can.drawString(156, 786, fields["date"])
+    can.drawString(472, 787, fields["start_time"])
+    can.drawString(472, 762, fields["end_time"])
+    can.drawString(181, 786, fields["date"])
     can.drawString(190, 358, fields["time"])
-    can.drawString(186, 700, str(field_surface).rjust(6))
-    can.drawString(509, 700, str(surface_covered).rjust(6))
-    can.drawString(195, 143, str(formated_extracted_plant[0]).rjust(6))
-    can.drawString(195, 115, str(formated_extracted_plant[1]).rjust(6))
-    can.drawString(195, 87, str(formated_extracted_plant[2]).rjust(6))
-    can.drawString(195, 52, str(total_plant).rjust(6))
+    can.drawString(245, 699, str(field_surface).rjust(6))
+    can.drawString(509, 699, str(surface_covered).rjust(6))
+
+    print(f"treated_plant: {len(treated_plant)} dict_extract_plant_by_number: {len(dict_extract_plant_by_number)}")
+    
+    if len(treated_plant) <= 5 :
+        for index in range(len(dict_extract_plant_by_number)):
+            can.drawString(505, 355-index*27, str(list(dict_extract_plant_by_number.values())[index]).rjust(6))
+            can.drawString(365, 355-index*27, str(list(dict_extract_plant_by_number.keys())[index]).capitalize())
+        if plant_not_extract:
+            for index in range(len(plant_not_extract)):
+                can.drawString(505, 355-(index+len(dict_extract_plant_by_number))*27, str(0).rjust(6))
+                can.drawString(365, 355-(index+len(dict_extract_plant_by_number))*27, str(plant_not_extract[index]).capitalize())
+
+    elif len(dict_extract_plant_by_number) <= 5 :
+        for index in range(len(dict_extract_plant_by_number)):
+            can.drawString(505, 355-index*27, str(list(dict_extract_plant_by_number.values())[index]).rjust(6))
+            can.drawString(365, 355-index*27, str(list(dict_extract_plant_by_number.keys())[index]).capitalize())
+        for index in range(5-len(dict_extract_plant_by_number)):
+            if index < len(plant_not_extract):
+                can.drawString(505, 355-(index+len(dict_extract_plant_by_number))*27, str(0).rjust(6))
+                can.drawString(365, 355-(index+len(dict_extract_plant_by_number))*27, str(plant_not_extract[index]).capitalize())
+    else:
+        for index in range(4):
+            can.drawString(505, 355-index*27, str(list(dict_extract_plant_by_number.values())[index]).rjust(6))
+            can.drawString(365, 355-index*27, str(list(dict_extract_plant_by_number.keys())[index]).capitalize())
+        can.drawString(505, 247, str(sum([number for number in list(dict_extract_plant_by_number.values())[4:]])).rjust(6))
+        can.drawString(365, 247, str("other").capitalize())
+
+    can.drawString(505, 205, str(total_plant).rjust(6))
     can.save()
 
     packet.seek(0)
+
+    #for language in ["fr","nl","en"]:
     new_pdf = PdfFileReader(packet)
 
+    input = PdfFileReader(open(f"{template_name}_{language}.pdf", "rb"),strict=False)
     page1 = input.getPage(0)
     page1.mergePage(new_pdf.getPage(0))
+    page1.compressContentStreams()
     output.addPage(page1)
 
-    outputStream = open(generate_name+".pdf", "wb")
+    outputStream = open(f"{generate_name}.pdf", "wb")
     output.write(outputStream)
 
 if __name__ == "__main__":
-    url = "http://127.0.0.1/map/SN000/18-11-2021%2023-03-04%20157124"
+    url = "http://172.16.0.9/map/SN004/06-07-2022%2011-10-28%20540469"
     res_name =  "output"
     generatePdf("utils_generate/template", res_name, url)
