@@ -1,5 +1,5 @@
 from cv2 import PROJ_SPHERICAL_ORTHO
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 import os 
 import statistics
@@ -17,6 +17,13 @@ Payload.max_decode_packets = 500
 
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode=None, logger=False, engineio_logger=False)
+
+def getConfig():
+    with open('./config.json') as json_file:
+        config = json.load(json_file)
+    return config
+
+config = getConfig()
 
 def get_field_feature(field):
     field.append(field[0])
@@ -41,7 +48,7 @@ def get_path_feature(path):
         "type": "Feature",
         "properties": {
             "stroke": "#ff0000",
-            "stroke-width": 2,
+            "stroke-width": 4,
             "stroke-opacity": 1,
             "name":"path"
         },
@@ -174,6 +181,12 @@ def maps(sn,session):
 
     data.append(f"Last gps quality : {last_gps_quality}")
 
+    if sn in config["Robot_Language"]:
+        language = config["Robot_Language"][sn]
+        data.append(f"Language : {language}")
+    else:
+        data.append(f"Language : en")
+
     traveled_distance = 0
 
     before = None
@@ -247,25 +260,28 @@ def map_static(sn,session):
 
     path = get_path(sn,session)
 
-    coords_center = [statistics.mean([coords[0] for coords in coords_field]),statistics.mean([coords[1] for coords in coords_field])]
+    #coords_center = [statistics.mean([coords[0] for coords in coords_field]),statistics.mean([coords[1] for coords in coords_field])]
     
     field_feature = get_field_feature(coords_field)
     path_feature = get_path_feature(get_formated_path(path)[1])
 
     feature_collection = {"type": "FeatureCollection","features": [field_feature, path_feature]}
 
-    #http://mt1.google.com/vt/lyrs=s&x={x}&y={Y}&z={z}
-    #{tile} = {z}/{x}/{Y}
-    #geojson-renderer --dimensions 1500x700 --tile-url-template "{tile}" map.geojson
-
     with open('map.geojson', 'w') as outfile:
         json.dump(feature_collection, outfile)
 
-    os.system("/root/.config/jlauncher/bin/geojson-renderer --dimensions 1920x1080 --tile-url-template 'tile={tile}' map.geojson")
+    #geojson-renderer --dimensions 1920x1080 --tile-url-template "{tile}" map.geojson
+    os.system("/root/.config/jlauncher/bin/geojson-renderer --dimensions 1920x1080 --tile-url-template 'load_balancing={1-4} tile={tile}' map.geojson")
 
+    #http://mt1.google.com/vt/lyrs=s&x={x}&y={Y}&z={z}
+    #{tile} = {z}/{x}/{Y}
     with open("map.svg", 'r+') as f:
         svg = f.read()
-        svg = re.sub(r'tile=([0-9]*)\/([0-9]*)\/([0-9]*)', r'http://mt1.google.com/vt/lyrs=s&x=\2&y=\3&z=\1', svg)
+        svg = re.sub(r'load_balancing=([0-9]) tile=([0-9]*)\/([0-9]*)\/([0-9]*)', r'http://mt\1.google.com/vt/lyrs=s&x=\3&y=\4&z=\2', svg)
+        svg = svg.replace("mt4","mt0")
+        #f.seek(0)
+        #f.write(svg)
+        #f.truncate()
 
     return render_template('map_static.html', svg=svg)
 

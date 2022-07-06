@@ -64,6 +64,7 @@ def generatePdf(template_name: str, generate_name: str, map_url: str):
     end = re.findall("End time : ([^<]*)", html)[0]
     extracted_plant = re.findall("Extraction number : (.*)", html)[0]
     travel_distance = re.findall("Traveled distance \(m\) : ([^<]*)", html)[0]
+    language = re.findall("Language : ([^<]*)", html)[0]
     field = eval(re.findall("var coords_field = (.*);", html)[0])
     field[0].reverse()
     field[1].reverse()
@@ -73,9 +74,9 @@ def generatePdf(template_name: str, generate_name: str, map_url: str):
 
     surface_covered = round(float(travel_distance)*0.33)
 
-    dict_extract_plant = eval(extracted_plant.replace("&#39;",'"'))
+    dict_extract_plant = eval(extracted_plant.replace("&#39;",'"').replace(" ",'').lower())
 
-    index_name_extracted_plant = {"Plantain_great": 0,"Plantain_narrowleaf": 0, "Porcelle" : 1 ,"Dandellion" : 2, "Dandelion" : 2}
+    index_name_extracted_plant = {"plantain_great": 0,"plantain_narrowleaf": 0, "porcelle" : 1 ,"dandellion" : 2, "dandelion" : 2}
     formated_extracted_plant = [0,0,0]
 
     total_plant = 0
@@ -88,7 +89,7 @@ def generatePdf(template_name: str, generate_name: str, map_url: str):
     makeStats(formated_extracted_plant, "utils_generate/stats.png")
 
     output = PdfFileWriter()
-    input = PdfFileReader(open(template_name+".pdf", "rb"),strict=False)
+    input = PdfFileReader(open(f"{template_name}_{language}.pdf", "rb"),strict=False)
 
     start = start.split(" ")
     start_format =  start[0].split("-")[2].replace(" ","")+"-"+\
@@ -118,7 +119,7 @@ def generatePdf(template_name: str, generate_name: str, map_url: str):
 
     fields = {  "start_time": session_times["start"].strftime("%H:%M:%S"),
                 "end_time": session_times["end"].strftime("%H:%M:%S"),
-                "date": session_times["start"].strftime("%m/%d/%Y"), 
+                "date": session_times["start"].strftime("%d/%m/%Y"), 
                 "time": "{:02}:{:02}:{:02}".format(session_times["duration"]["hours"], session_times["duration"]["minutes"], session_times["duration"]["seconds"])
     }
 

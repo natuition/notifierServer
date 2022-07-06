@@ -140,3 +140,5 @@ create_sn000.session
 package-lock.json
 package.json
 session_name.session
+map.geojson
+map.svg
