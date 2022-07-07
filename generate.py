@@ -1,4 +1,4 @@
-from PyPDF2 import PdfFileWriter, PdfFileReader
+from PyPDF2 import PdfFileWriter, PdfFileReader, PdfFileMerger
 import datetime
 import io
 from reportlab.pdfgen import canvas
@@ -153,54 +153,53 @@ def generatePdf(template_name: str, generate_name: str, map_url: str):
     packet = io.BytesIO()
     can = canvas.Canvas(packet)
     can.drawImage("utils_generate/map.jpeg", 55, 390, 500, 290)
-    can.drawImage("utils_generate/stats.png", 80, 167, 180, 180)
-    can.drawImage("utils_generate/cible.png", 125, 211, 90, 90, mask=[250,255,250,255,250,255])
-    can.drawString(472, 787, fields["start_time"])
-    can.drawString(472, 762, fields["end_time"])
-    can.drawString(181, 786, fields["date"])
-    can.drawString(190, 358, fields["time"])
-    can.drawString(245, 699, str(field_surface).rjust(6))
-    can.drawString(509, 699, str(surface_covered).rjust(6))
+    can.drawImage("utils_generate/stats.png", 70, 171, 180, 180)
+    can.drawImage("utils_generate/cible.png", 115, 215, 90, 90, mask=[250,255,250,255,250,255])
+    can.drawString(465, 787, fields["start_time"])
+    can.drawString(465, 762, fields["end_time"])
+    can.drawString(174, 786, fields["date"])
+    can.drawString(184, 362, fields["time"])
+    can.drawString(235, 699, str(field_surface).rjust(6))
+    can.drawString(499, 699, str(surface_covered).rjust(6))
 
     print(f"treated_plant: {len(treated_plant)} dict_extract_plant_by_number: {len(dict_extract_plant_by_number)}")
     
     if len(treated_plant) <= 5 :
         for index in range(len(dict_extract_plant_by_number)):
-            can.drawString(505, 355-index*27, str(list(dict_extract_plant_by_number.values())[index]).rjust(6))
-            can.drawString(365, 355-index*27, str(list(dict_extract_plant_by_number.keys())[index]).capitalize())
+            can.drawString(498, 358-index*27, str(list(dict_extract_plant_by_number.values())[index]).rjust(6))
+            can.drawString(358, 358-index*27, str(list(dict_extract_plant_by_number.keys())[index]).capitalize())
         if plant_not_extract:
             for index in range(len(plant_not_extract)):
-                can.drawString(505, 355-(index+len(dict_extract_plant_by_number))*27, str(0).rjust(6))
-                can.drawString(365, 355-(index+len(dict_extract_plant_by_number))*27, str(plant_not_extract[index]).capitalize())
+                can.drawString(498, 358-(index+len(dict_extract_plant_by_number))*27, str(0).rjust(6))
+                can.drawString(358, 358-(index+len(dict_extract_plant_by_number))*27, str(plant_not_extract[index]).capitalize())
 
     elif len(dict_extract_plant_by_number) <= 5 :
         for index in range(len(dict_extract_plant_by_number)):
-            can.drawString(505, 355-index*27, str(list(dict_extract_plant_by_number.values())[index]).rjust(6))
-            can.drawString(365, 355-index*27, str(list(dict_extract_plant_by_number.keys())[index]).capitalize())
+            can.drawString(498, 358-index*27, str(list(dict_extract_plant_by_number.values())[index]).rjust(6))
+            can.drawString(358, 358-index*27, str(list(dict_extract_plant_by_number.keys())[index]).capitalize())
         for index in range(5-len(dict_extract_plant_by_number)):
             if index < len(plant_not_extract):
-                can.drawString(505, 355-(index+len(dict_extract_plant_by_number))*27, str(0).rjust(6))
-                can.drawString(365, 355-(index+len(dict_extract_plant_by_number))*27, str(plant_not_extract[index]).capitalize())
+                can.drawString(498, 358-(index+len(dict_extract_plant_by_number))*27, str(0).rjust(6))
+                can.drawString(358, 358-(index+len(dict_extract_plant_by_number))*27, str(plant_not_extract[index]).capitalize())
     else:
         for index in range(4):
-            can.drawString(505, 355-index*27, str(list(dict_extract_plant_by_number.values())[index]).rjust(6))
-            can.drawString(365, 355-index*27, str(list(dict_extract_plant_by_number.keys())[index]).capitalize())
-        can.drawString(505, 247, str(sum([number for number in list(dict_extract_plant_by_number.values())[4:]])).rjust(6))
-        can.drawString(365, 247, str("other").capitalize())
+            can.drawString(498, 358-index*27, str(list(dict_extract_plant_by_number.values())[index]).rjust(6))
+            can.drawString(358, 358-index*27, str(list(dict_extract_plant_by_number.keys())[index]).capitalize())
+        can.drawString(498, 247, str(sum([number for number in list(dict_extract_plant_by_number.values())[4:]])).rjust(6))
+        can.drawString(358, 247, str("other").capitalize())
 
-    can.drawString(505, 205, str(total_plant).rjust(6))
+    can.drawString(498, 210, str(total_plant).rjust(6))
     can.save()
 
     packet.seek(0)
-
-    #for language in ["fr","nl","en"]:
     new_pdf = PdfFileReader(packet)
-
-    input = PdfFileReader(open(f"{template_name}_{language}.pdf", "rb"),strict=False)
-    page1 = input.getPage(0)
-    page1.mergePage(new_pdf.getPage(0))
-    page1.compressContentStreams()
-    output.addPage(page1)
+    
+    #for language in ["fr","nl","en"]:
+    for language in [language]:
+        template = PdfFileReader(open(f"{template_name}_{language}.pdf", "rb"),strict=False)
+        template_page = template.getPage(0)
+        template_page.mergePage(new_pdf.getPage(0))
+        output.addPage(template_page)
 
     outputStream = open(f"{generate_name}.pdf", "wb")
     output.write(outputStream)
