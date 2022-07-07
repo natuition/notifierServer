@@ -271,7 +271,7 @@ def map_static(sn,session):
         json.dump(feature_collection, outfile)
 
     #geojson-renderer --dimensions 1920x1080 --tile-url-template "{tile}" map.geojson
-    os.system("/root/.config/jlauncher/bin/geojson-renderer --dimensions 1920x1080 --tile-url-template 'load_balancing={1-4} tile={tile}' map.geojson")
+    os.system("/root/.config/jlauncher/bin/geojson-renderer --dimensions 720x480 --tile-url-template 'load_balancing={1-4} tile={tile}' map.geojson")
 
     #http://mt1.google.com/vt/lyrs=s&x={x}&y={Y}&z={z}
     #{tile} = {z}/{x}/{Y}

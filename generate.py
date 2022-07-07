@@ -3,28 +3,43 @@ import datetime
 import io
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+
 from time import sleep
 import os
 import cv2 
 import re
 import requests
 import matplotlib.pyplot as plt
+
 from backports.datetime_fromisoformat import MonkeyPatch
 MonkeyPatch.patch_fromisoformat()
+
 from haversine import haversine
-from PIL import Image
+
+from selenium import webdriver
+"""
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
+"""
 
 def takeScreenshot(url: str, file_name: str):
 
     op = webdriver.ChromeOptions()
     op.add_argument("headless")
-    op.add_argument("--no-sandbox");
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+    op.add_argument("--no-sandbox");    
+
+    #driver = webdriver.Chrome(ChromeDriverManager().install())
+    #driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
+
+    driver = webdriver.Chrome(options=op, executable_path="./utils_generate/chromedriver")
+
     driver.set_window_position(0, 0)
-    driver.set_window_size(720,480)
+    #driver.set_window_size(720,480)
+    driver.set_window_size(740,500)
 
     driver.get(url)
 
@@ -37,7 +52,7 @@ def takeScreenshot(url: str, file_name: str):
     os.remove(os.getcwd()+"/"+file_name.replace("jpeg","png"))
 
 def makeStats(dict_extract_plant_by_number, total_plant, file_name: str):
-    colors = ['#91BD55', '#D4DA54', '#41884B', '#56A973', '#55A974', '#4F9B90']
+    colors = ['#91BD55', '#D4DA54', '#41884B', '#56A973', '#459B90']
 
     if len(dict_extract_plant_by_number) == 0:
         plt.pie([1], colors=['#E4E4E3'], startangle=90, counterclock=True)
@@ -46,10 +61,13 @@ def makeStats(dict_extract_plant_by_number, total_plant, file_name: str):
         colors_final = colors[0:len(dict_extract_plant_by_number)]
         plt.pie(stats, colors=colors_final, startangle=90, counterclock=True)
     else:
-        stats = [number/total_plant for number in list(dict_extract_plant_by_number.values())[0:3]]
-        last_number = sum([number/total_plant for number in list(dict_extract_plant_by_number.values())[4:]])
+        stats = [number for number in list(dict_extract_plant_by_number.values())[0:4]]
+        print(stats)
+        last_number = sum([number for number in list(dict_extract_plant_by_number.values())[4:]])
         stats.append(last_number)
-        plt.pie(stats, colors=colors, startangle=90, counterclock=True)
+        print(stats)
+        print(colors)
+        plt.pie(stats, colors=colors, startangle=90, counterclock=True, normalize=True)
         
     my_circle=plt.Circle( (0,0), 0.6, color='white', alpha=1)
     p=plt.gcf()
@@ -134,7 +152,7 @@ def generatePdf(template_name: str, generate_name: str, map_url: str):
 
     packet = io.BytesIO()
     can = canvas.Canvas(packet)
-    can.drawImage("utils_generate/map.jpeg", 45, 390, 500, 290)
+    can.drawImage("utils_generate/map.jpeg", 55, 390, 500, 290)
     can.drawImage("utils_generate/stats.png", 80, 167, 180, 180)
     can.drawImage("utils_generate/cible.png", 125, 211, 90, 90, mask=[250,255,250,255,250,255])
     can.drawString(472, 787, fields["start_time"])
