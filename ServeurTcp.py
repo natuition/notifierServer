@@ -196,10 +196,12 @@ class ClientHandling(Thread):
                 sessionNumber = str(infos[1]).replace(" ","%20")
                 self.urlMap = f"\nhttp://172.16.0.9/map/{self.sn}/{sessionNumber}"
                 self.notifier.sendTelegramMsg(self.tokens["chat_id"],self.msg,list(),False, sn=self.sn, url_map=self.urlMap) 
-                self.field = utility.Logger(f"{self.sn}/{infos[1]}/field.txt", add_time=False)
-                for coord in eval(infos[4]):
-                    self.field.write_and_flush(f"{coord}\n")
-                self.field.close()
+                with utility.Logger(f"{self.sn}/{infos[1]}/field.txt", add_time=False) as field_file:
+                    for coord in eval(infos[4]):
+                        field_file.write_and_flush(f"{coord}\n") 
+                if len(infos) >= 6:
+                    with utility.Logger(f"{self.sn}/{infos[1]}/field_name.txt", add_time=False) as field_name:
+                        field_name.write_and_flush(f"{infos[5]}\n") 
                 self.resume_session = utility.Logger(f"{self.sn}/{infos[1]}/session_resume.txt", add_time=False)
                 self.resume_session.write_and_flush(f"Start time : {infos[1]}\n")
                 self.start_time = f"{infos[1]}"
