@@ -252,10 +252,8 @@ if __name__ == "__main__":
     try:
         server = Server()
         server.start()
-        while True:
-            pass
+        server.join()
     except KeyboardInterrupt:
         print("Ctrl+c are catch...")
     finally:
         server.stop()
-        server.join()
