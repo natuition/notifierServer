@@ -104,10 +104,13 @@ class Server(Thread):
             if DEBUG:
                 print(f"[{address[0]}] connected")
             
-            msg = f"{self.robots[address[0]]} : " + self.translate["Messages"]["Robot_ON"]["fr"]
-            client_handling = ClientHandling(client, address, self.client_handling_stopped,self.robots[address[0]],msg,self.notifier,self.tokens,self.send_anti_theft)
-            client_handling.start()
-            self.client_pool.append(client_handling)
+            if address[0] not in self.robots:
+                self.notifier.sendTelegramMsg(self.tokens["chat_id"],f"Robot inconnu ! [ip:{address[0]}] ",list(),False)
+            else:
+                msg = f"{self.robots[address[0]]} : " + self.translate["Messages"]["Robot_ON"]["fr"]
+                client_handling = ClientHandling(client, address, self.client_handling_stopped,self.robots[address[0]],msg,self.notifier,self.tokens,self.send_anti_theft)
+                client_handling.start()
+                self.client_pool.append(client_handling)
 
 
 class ClientHandling(Thread):
