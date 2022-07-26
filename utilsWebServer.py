@@ -187,6 +187,11 @@ def maps(sn,session):
     else:
         data.append(f"Language : en")
 
+    if os.path.exists(os.path.abspath(os.getcwd())+f"/{sn}/{session}/field_name.txt"):
+        with open(os.path.abspath(os.getcwd())+f"/{sn}/{session}/field_name.txt", 'r') as file:
+            field_name = file.readline().replace("\n","")
+        data.append(f"Field name : '{field_name}'")
+
     traveled_distance = 0
 
     before = None

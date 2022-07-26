@@ -10,6 +10,7 @@ import cv2
 import re
 import requests
 import matplotlib.pyplot as plt
+import math
 
 from backports.datetime_fromisoformat import MonkeyPatch
 MonkeyPatch.patch_fromisoformat()
@@ -92,6 +93,12 @@ def generatePdf(template_name: str, generate_name: str, map_url: str):
     treated_plant = re.findall("Treated plant : (.*)", html)[0]
     travel_distance = re.findall("Traveled distance \(m\) : ([^<]*)", html)[0]
     language = re.findall("Language : ([^<]*)", html)[0]
+    field_name = re.findall("Field name : &#39;(.*)&#39;", html)[0]
+    if len(field_name) > 20:
+        field_name = field_name[0:17]+"..."
+    elif len(field_name) < 20:
+        space = "  " * math.ceil((20-len(field_name))/2)
+        field_name = space+field_name
     field = eval(re.findall("var coords_field = (.*);", html)[0])
     field[0].reverse()
     field[1].reverse()
@@ -158,6 +165,7 @@ def generatePdf(template_name: str, generate_name: str, map_url: str):
     can.drawString(465, 787, fields["start_time"])
     can.drawString(465, 762, fields["end_time"])
     can.drawString(174, 786, fields["date"])
+    can.drawString(145, 762, field_name)
     can.drawString(184, 362, fields["time"])
     can.drawString(235, 699, str(field_surface).rjust(6))
     can.drawString(499, 699, str(surface_covered).rjust(6))
